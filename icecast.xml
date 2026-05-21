@@ -33,7 +33,7 @@
   </authentication>
 
   <!-- hostname is used only in public directory listings -->
-  <hostname>localhost</hostname>
+  <hostname>icecast.railway.internal</hostname>
 
   <!-- ─── Listen socket ──────────────────────────────────────── -->
   <listen-socket>
