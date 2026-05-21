@@ -26,10 +26,10 @@
        admin-password  : Icecast web admin panel
   ────────────────────────────────────────────────────────────── -->
   <authentication>
-    <source-password>changeme123</source-password>
-    <relay-password>changeme123</relay-password>
+    <source-password>${ICECAST_SOURCE_PASSWORD}</source-password>
+    <relay-password>${ICECAST_SOURCE_PASSWORD}</relay-password>
     <admin-user>admin</admin-user>
-    <admin-password>changeme123</admin-password>
+    <admin-password>${ICECAST_ADMIN_PASSWORD}</admin-password>
   </authentication>
 
   <!-- hostname is used only in public directory listings -->
@@ -60,17 +60,14 @@
     <public>1</public>
   </mount>
 
-  <!-- ─── Per-user stream mounts ────────────────────────────────
+  <!-- ─── Default mount ─────────────────────────────────────────
        All mounts not listed above (user stream keys like /{stream_key})
-       use URL authentication. Icecast POSTs to the backend which
-       validates the per-user source_password stored in the DB.
-       The global source-password above is still used for /radio and
-       /radio-hq; user mounts bypass it via this default mount block.
+       inherit the global source-password. The backend authenticates
+       users via JWT before starting FFmpeg — no URL auth callback needed.
   ────────────────────────────────────────────────────────────── -->
   <mount type="default">
-    <authentication type="url">
-      <option name="source_auth" value="${ICECAST_BACKEND_AUTH_URL}/api/icecast/auth"/>
-    </authentication>
+    <max-listeners>500</max-listeners>
+    <public>0</public>
   </mount>
 
   <!-- ─── File serving / admin ───────────────────────────────── -->

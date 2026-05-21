@@ -27,14 +27,15 @@ RUN apt-get update \
     && mkdir -p /var/log/icecast2 /run/icecast2 \
     && chown -R icecast2:icecast2 /var/log/icecast2 /run/icecast2
 
-# Copy config template from repo root (envsubst fills in ${ICECAST_BACKEND_AUTH_URL} at startup)
+# Copy config template from repo root (envsubst fills in passwords at startup)
 COPY --chown=icecast2:icecast2 icecast.xml           /etc/icecast2/icecast.xml.tmpl
 COPY --chown=icecast2:icecast2 icecast/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Default backend auth URL (Docker Compose). Override on Railway:
-# ICECAST_BACKEND_AUTH_URL=http://backend.railway.internal:8080
-ENV ICECAST_BACKEND_AUTH_URL=http://backend:8080
+# Defaults — override on Railway with strong random values.
+# ICECAST_SOURCE_PASSWORD must match the backend's ICECAST_SOURCE_PASSWORD env var.
+ENV ICECAST_SOURCE_PASSWORD=changeme123
+ENV ICECAST_ADMIN_PASSWORD=changeme123
 ENV PORT=8000
 EXPOSE 8000
 
