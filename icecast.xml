@@ -69,7 +69,7 @@
   ────────────────────────────────────────────────────────────── -->
   <mount type="default">
     <authentication type="url">
-      <option name="source_auth" value="http://backend:8080/api/icecast/auth"/>
+      <option name="source_auth" value="${ICECAST_BACKEND_AUTH_URL}/api/icecast/auth"/>
     </authentication>
   </mount>
 
