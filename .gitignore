@@ -1,0 +1,8 @@
+# SSL certificates — never commit private keys or certs
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+
+# Local env overrides
+.env
+*.local

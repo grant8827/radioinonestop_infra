@@ -1,0 +1,121 @@
+# ─────────────────────────────────────────────────────────────────
+# Radio In One Stop — Production Docker Compose
+#
+# Services:
+#   backend   Go server — RTMP ingest (1935) + HLS serving (8080)
+#             Spawns FFmpeg per live stream.
+#   frontend  Vite build served by Nginx (internal port 3000)
+#   nginx     Public-facing reverse proxy with SSL termination.
+#             Ports 80 + 443 exposed to the host.
+#
+# SSL: place your cert at ./ssl/cert.pem and ./ssl/key.pem.
+#      For Let's Encrypt, mount /etc/letsencrypt or use Certbot
+#      companion (see README). For local dev, generate a self-signed
+#      cert: ./scripts/gen-cert.sh (provided below).
+#
+# Concurrency: backend HLS segments are static files served by
+# Go's net/http which handles 500+ concurrent readers trivially.
+# Nginx in front adds connection pooling, keep-alive, and caching
+# for segment files so the backend sees far fewer total requests.
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ams_backend
+    restart: unless-stopped
+    # Port 1935 (RTMP) must be exposed directly — it is TCP, not HTTP,
+    # and Nginx cannot proxy RTMP without the nginx-rtmp module.
+    ports:
+      - "1935:1935"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=8080
+      # Tell the backend what the public HLS base URL is so /api/config
+      # returns correct URLs to the browser. Change to your domain.
+      - HLS_BASE_URL=${HLS_BASE_URL:-https://localhost}
+      # Icecast target for the browser encoder (ffmpeg push destination).
+      # On Railway set ICECAST_HOST=icecast.railway.internal instead.
+      - ICECAST_HOST=icecast
+      - ICECAST_PORT=8000
+    volumes:
+      # Shared HLS segment volume so Nginx can serve segments directly
+      # from disk without proxying through the Go server (optional optimisation).
+      - hls_segments:/tmp/hls
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  icecast:
+    image: icecast/icecast2:latest
+    container_name: ams_icecast
+    restart: unless-stopped
+    # Port 8000 exposed to host so source clients (BUTT, Mixxx, etc.) can
+    # connect directly without going through Nginx.
+    # Listeners use HTTPS at /icecast/radio via Nginx (below).
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./icecast.xml:/etc/icecast.xml:ro
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: ams_mediamtx
+    restart: unless-stopped
+    # Port 8889 (WebRTC WHIP) and 8888 (HLS) exposed to host so the Vite
+    # dev server proxy (localhost:5173) can reach MediaMTX directly.
+    # In production Nginx proxies these internally.
+    ports:
+      - "8889:8889"
+      - "8888:8888"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+      - hls_segments:/tmp/hls
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ams_frontend
+    restart: unless-stopped
+    # Not exposed to the host — Nginx proxies to it internally.
+    expose:
+      - "80"
+    environment:
+      - BACKEND_URL=http://backend:8080
+      - PORT=80
+      # Icecast URL for the /icecast/ nginx proxy (listener access).
+      # On Railway set ICECAST_URL=http://icecast.railway.internal:8000 instead.
+      - ICECAST_URL=http://icecast:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ams_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      # Serve HLS segments directly from disk — bypass the Go server for
+      # the static file path, cutting latency and CPU in half at scale.
+      - hls_segments:/var/www/hls:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  hls_segments:

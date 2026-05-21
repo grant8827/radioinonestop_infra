@@ -1,0 +1,68 @@
+###############################################
+# MediaMTX — Low-Latency HLS Configuration
+# Docs: https://github.com/bluenviron/mediamtx
+###############################################
+
+logLevel: info
+logDestinations: [stdout]
+
+# MediaMTX API (stream management)
+api: yes
+apiAddress: :9997
+
+# RTMP — disabled here; Go backend handles RTMP on port 1935
+rtmp: no
+
+# HLS — write segments to shared volume so Nginx can serve them
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency        # low-latency HLS (LLHLS)
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms        # targets ~500ms latency
+hlsSegmentMaxSize: 50MB
+hlsAllowOrigin: "*"           # allow browser cross-origin requests
+hlsDirectory: /tmp/hls        # write to shared Docker volume
+
+# WebRTC WHIP — browser broadcaster
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: "*"
+
+# RTSP — disable if not needed
+rtsp: no
+
+###############################################
+# Stream paths
+#
+# Radio:  rtmp://<server>:1935/live/radio
+# Video:  rtmp://<server>:1935/live/video
+#
+# HLS playback URLs (for Admin Settings):
+#   http://<server>:8888/live/radio/index.m3u8
+#   http://<server>:8888/live/video/index.m3u8
+###############################################
+paths:
+  # Browser broadcaster — WebRTC WHIP → HLS
+  # WHIP endpoint: /webrtc/radio/whip  (proxied by Nginx)
+  # HLS output:    /hls/radio/index.m3u8
+  radio:
+    source: publisher
+    maxReaders: 200
+
+  live:
+    source: publisher
+    maxReaders: 200
+
+  # Legacy paths (keep for backwards compat with existing OBS configs)
+  live/radio:
+    source: publisher
+    maxReaders: 200
+
+  live/video:
+    source: publisher
+    maxReaders: 200
+
+  # Catch-all (optional — accepts any path)
+  ~^.*$:
+    source: publisher

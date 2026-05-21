@@ -1,0 +1,102 @@
+<icecast>
+
+  <!-- ─── Server identity ─────────────────────────────────────── -->
+  <location>Radio In One Stop</location>
+  <admin>admin@example.com</admin>
+
+  <!-- ─── Connection limits ─────────────────────────────────────
+       clients     : max concurrent listeners
+       sources     : max simultaneous source connections (DJs)
+       burst-size  : bytes sent immediately on connect (helps players
+                     start without buffering)
+  ────────────────────────────────────────────────────────────── -->
+  <limits>
+    <clients>500</clients>
+    <sources>10</sources>
+    <queue-size>524288</queue-size>
+    <client-timeout>30</client-timeout>
+    <header-timeout>15</header-timeout>
+    <source-timeout>10</source-timeout>
+    <burst-on-connect>1</burst-on-connect>
+    <burst-size>65535</burst-size>
+  </limits>
+
+  <!-- ─── Passwords — CHANGE BEFORE DEPLOYING ───────────────────
+       source-password : used by BUTT, Mixxx, Liquidsoap, Darkice
+       admin-password  : Icecast web admin panel
+  ────────────────────────────────────────────────────────────── -->
+  <authentication>
+    <source-password>changeme123</source-password>
+    <relay-password>changeme123</relay-password>
+    <admin-user>admin</admin-user>
+    <admin-password>changeme123</admin-password>
+  </authentication>
+
+  <!-- hostname is used only in public directory listings -->
+  <hostname>localhost</hostname>
+
+  <!-- ─── Listen socket ──────────────────────────────────────── -->
+  <listen-socket>
+    <port>8000</port>
+    <bind-address>0.0.0.0</bind-address>
+  </listen-socket>
+
+  <!-- ─── Default mount ─────────────────────────────────────────
+       Source clients push to /radio
+       Listeners pull from /radio  (or via Nginx: /icecast/radio)
+  ────────────────────────────────────────────────────────────── -->
+  <mount type="normal">
+    <mount-name>/radio</mount-name>
+    <max-listeners>500</max-listeners>
+    <public>1</public>
+    <!-- Optional: fallback to a static file when no source is live -->
+    <!-- <fallback-mount>/fallback.mp3</fallback-mount> -->
+  </mount>
+
+  <!-- Second mount for higher-quality stream if needed -->
+  <mount type="normal">
+    <mount-name>/radio-hq</mount-name>
+    <max-listeners>200</max-listeners>
+    <public>1</public>
+  </mount>
+
+  <!-- ─── Per-user stream mounts ────────────────────────────────
+       All mounts not listed above (user stream keys like /{stream_key})
+       use URL authentication. Icecast POSTs to the backend which
+       validates the per-user source_password stored in the DB.
+       The global source-password above is still used for /radio and
+       /radio-hq; user mounts bypass it via this default mount block.
+  ────────────────────────────────────────────────────────────── -->
+  <mount type="default">
+    <authentication type="url">
+      <option name="source_auth" value="http://backend:8080/api/icecast/auth"/>
+    </authentication>
+  </mount>
+
+  <!-- ─── File serving / admin ───────────────────────────────── -->
+  <fileserve>1</fileserve>
+
+  <paths>
+    <basedir>/usr/share/icecast2</basedir>
+    <logdir>/var/log/icecast2</logdir>
+    <webroot>/usr/share/icecast2/web</webroot>
+    <adminroot>/usr/share/icecast2/admin</adminroot>
+    <pidfile>/run/icecast2/icecast2.pid</pidfile>
+    <!-- Redirect root → status page -->
+    <alias source="/" dest="/status.xsl"/>
+  </paths>
+
+  <!-- ─── Logging ────────────────────────────────────────────── -->
+  <logging>
+    <accesslog>access.log</accesslog>
+    <errorlog>error.log</errorlog>
+    <loglevel>3</loglevel>   <!-- 1=error 2=warn 3=info 4=debug -->
+    <logsize>10000</logsize>
+  </logging>
+
+  <!-- ─── Security ───────────────────────────────────────────── -->
+  <security>
+    <chroot>0</chroot>  <!-- keep 0 inside Docker — no chroot needed -->
+  </security>
+
+</icecast>
