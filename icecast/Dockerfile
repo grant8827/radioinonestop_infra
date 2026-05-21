@@ -12,10 +12,18 @@
 
 FROM debian:bookworm-slim
 
+# Prevent interactive prompts during package install
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update \
+    # Tell the icecast2 postinst not to run interactive config
+    && echo "icecast2 icecast2/icecast-setup boolean false" | debconf-set-selections \
     && apt-get install -y --no-install-recommends icecast2 \
     && rm -rf /var/lib/apt/lists/* \
-    # Ensure the icecast2 system user owns the dirs it needs to write to
+    # The postinst may skip user creation when running non-interactively;
+    # create the system user/group explicitly as a fallback.
+    && (getent group  icecast2 || addgroup  --system icecast2) \
+    && (getent passwd icecast2 || adduser --system --ingroup icecast2 --no-create-home icecast2) \
     && mkdir -p /var/log/icecast2 /run/icecast2 \
     && chown -R icecast2:icecast2 /var/log/icecast2 /run/icecast2
 
