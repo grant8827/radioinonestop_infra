@@ -29,8 +29,9 @@ webrtc: yes
 webrtcAddress: :8889
 webrtcAllowOrigin: "*"
 
-# RTSP — disable if not needed
-rtsp: no
+# RTSP — internal only; used by FFmpeg relay to pull WebRTC streams
+rtsp: yes
+rtspAddress: :8554
 
 ###############################################
 # Stream paths
