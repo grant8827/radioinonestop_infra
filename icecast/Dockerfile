@@ -7,8 +7,9 @@
 #   - Set "Root Directory" to / (repo root)
 #   - Set "Dockerfile Path" to icecast/Dockerfile
 #   - Add env var PORT=8000 to this service
-#   - Name the service "icecast" so other services can reach it via
-#     icecast.railway.internal:8000 on the private network.
+#   - In the backend service, set:
+#       ICECAST_HOST=${{ icecast.RAILWAY_PRIVATE_DOMAIN }}
+#     replacing "icecast" with the exact Railway service name.
 
 FROM debian:bookworm-slim
 
@@ -36,6 +37,7 @@ RUN chmod +x /entrypoint.sh
 # ICECAST_SOURCE_PASSWORD must match the backend's ICECAST_SOURCE_PASSWORD env var.
 ENV ICECAST_SOURCE_PASSWORD=changeme123
 ENV ICECAST_ADMIN_PASSWORD=changeme123
+ENV ICECAST_HOSTNAME=localhost
 ENV PORT=8000
 EXPOSE 8000
 

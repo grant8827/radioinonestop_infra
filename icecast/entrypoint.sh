@@ -3,7 +3,7 @@
 # Required on Railway:
 #   ICECAST_SOURCE_PASSWORD=<random>   (must match backend ICECAST_SOURCE_PASSWORD)
 #   ICECAST_ADMIN_PASSWORD=<random>    (admin UI password)
-envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_ADMIN_PASSWORD}' \
+envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_ADMIN_PASSWORD} ${ICECAST_HOSTNAME}' \
   < /etc/icecast2/icecast.xml.tmpl \
   > /tmp/icecast.xml
 exec icecast2 -c /tmp/icecast.xml
