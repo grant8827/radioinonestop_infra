@@ -6,12 +6,21 @@
 logLevel: info
 logDestinations: [stdout]
 
+# ── Auth webhook (STRM-8) ─────────────────────────────────────────────────────
+# MediaMTX calls this URL for every publish / read attempt.
+# Go returns 200 to allow or 403 to reject.
+# Leave blank to disable (useful in dev without the backend running).
+# Set AUTH_INTERNAL_JWT=1 on the backend env and generate a shared secret to
+# secure the callback; the backend reads X-Stream-Auth-Token from each request.
+externalAuthenticationURL: http://backend:8080/api/stream/auth
+
 # MediaMTX API (stream management)
 api: yes
 apiAddress: :9997
 
-# RTMP — disabled here; Go backend handles RTMP on port 1935
-rtmp: no
+# RTMP ingest (MediaMTX is the sole endpoint on :1935)
+rtmp: yes
+rtmpAddress: :1935
 
 # HLS — write segments to shared volume so Nginx can serve them
 hls: yes
@@ -54,6 +63,17 @@ paths:
   live:
     source: publisher
     maxReaders: 200
+    # Lifecycle webhooks for Go orchestrator (STRM-1 style contract).
+    runOnPublish: >-
+      sh -c 'curl -sS -X POST http://backend:8080/api/stream/status
+      -H "Content-Type: application/json"
+      -H "X-Stream-Status-Token: ${STREAM_STATUS_TOKEN:-}"
+      -d "{\"action\":\"publish\",\"user\":\"$MTX_PATH\",\"path\":\"$MTX_PATH\"}" || true'
+    runOnUnpublish: >-
+      sh -c 'curl -sS -X POST http://backend:8080/api/stream/status
+      -H "Content-Type: application/json"
+      -H "X-Stream-Status-Token: ${STREAM_STATUS_TOKEN:-}"
+      -d "{\"action\":\"done\",\"user\":\"$MTX_PATH\",\"path\":\"$MTX_PATH\"}" || true'
 
   # Legacy paths (keep for backwards compat with existing OBS configs)
   live/radio:
@@ -67,3 +87,13 @@ paths:
   # Catch-all (optional — accepts any path)
   ~^.*$:
     source: publisher
+    runOnPublish: >-
+      sh -c 'curl -sS -X POST http://backend:8080/api/stream/status
+      -H "Content-Type: application/json"
+      -H "X-Stream-Status-Token: ${STREAM_STATUS_TOKEN:-}"
+      -d "{\"action\":\"publish\",\"user\":\"$MTX_PATH\",\"path\":\"$MTX_PATH\"}" || true'
+    runOnUnpublish: >-
+      sh -c 'curl -sS -X POST http://backend:8080/api/stream/status
+      -H "Content-Type: application/json"
+      -H "X-Stream-Status-Token: ${STREAM_STATUS_TOKEN:-}"
+      -d "{\"action\":\"done\",\"user\":\"$MTX_PATH\",\"path\":\"$MTX_PATH\"}" || true'

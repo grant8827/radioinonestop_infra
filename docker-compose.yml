@@ -26,19 +26,19 @@ services:
       dockerfile: Dockerfile
     container_name: ams_backend
     restart: unless-stopped
-    # Port 1935 (RTMP) must be exposed directly — it is TCP, not HTTP,
-    # and Nginx cannot proxy RTMP without the nginx-rtmp module.
+    # MediaMTX is the sole RTMP ingest endpoint (port 1935).
+    # Go RTMP server is disabled via DISABLE_GO_RTMP=1 below.
     ports:
-      - "1935:1935"
+      # - "1935:1935"
     env_file:
       - ./backend/.env
     environment:
       - PORT=8080
-      # Tell the backend what the public HLS base URL is so /api/config
-      # returns correct URLs to the browser. Change to your domain.
+      - DISABLE_GO_RTMP=1
       - HLS_BASE_URL=${HLS_BASE_URL:-https://localhost}
       # Icecast target for the browser encoder (ffmpeg push destination).
-      # On Railway set ICECAST_HOST=icecast.railway.internal instead.
+      # On Railway set ICECAST_HOST=${{ icecast.RAILWAY_PRIVATE_DOMAIN }}
+      # on the backend service, replacing "icecast" with the exact service name.
       - ICECAST_HOST=icecast
       - ICECAST_PORT=8000
     volumes:
@@ -67,10 +67,9 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: ams_mediamtx
     restart: unless-stopped
-    # Port 8889 (WebRTC WHIP) and 8888 (HLS) exposed to host so the Vite
-    # dev server proxy (localhost:5173) can reach MediaMTX directly.
-    # In production Nginx proxies these internally.
+    # Ports 1935 (RTMP ingest), 8889 (WebRTC WHIP), and 8888 (HLS).
     ports:
+      - "1935:1935"
       - "8889:8889"
       - "8888:8888"
     volumes:
@@ -93,7 +92,8 @@ services:
       - BACKEND_URL=http://backend:8080
       - PORT=80
       # Icecast URL for the /icecast/ nginx proxy (listener access).
-      # On Railway set ICECAST_URL=http://icecast.railway.internal:8000 instead.
+      # On Railway set ICECAST_URL=http://${{ icecast.RAILWAY_PRIVATE_DOMAIN }}:8000
+      # on this service, replacing "icecast" with the exact service name.
       - ICECAST_URL=http://icecast:8000
     depends_on:
       backend:
