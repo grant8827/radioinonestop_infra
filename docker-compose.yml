@@ -72,6 +72,8 @@ services:
       - "1935:1935"
       - "8889:8889"
       - "8888:8888"
+      # WebRTC ICE requires UDP ports to negotiate media streams
+      - "8189:8189/udp"
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
       - hls_segments:/tmp/hls

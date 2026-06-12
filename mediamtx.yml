@@ -12,7 +12,7 @@ logDestinations: [stdout]
 # Leave blank to disable (useful in dev without the backend running).
 # Set AUTH_INTERNAL_JWT=1 on the backend env and generate a shared secret to
 # secure the callback; the backend reads X-Stream-Auth-Token from each request.
-externalAuthenticationURL: http://backend:8080/api/stream/auth
+# externalAuthenticationURL: http://backend:8080/api/stream/auth
 
 # MediaMTX API (stream management)
 api: yes
