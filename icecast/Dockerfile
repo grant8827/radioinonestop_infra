@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     # Tell the icecast2 postinst not to run interactive config
     && echo "icecast2 icecast2/icecast-setup boolean false" | debconf-set-selections \
-    && apt-get install -y --no-install-recommends icecast2 gettext-base \
+    && apt-get install -y --no-install-recommends icecast2 gettext-base media-types \
     && rm -rf /var/lib/apt/lists/* \
     # The postinst may skip user creation when running non-interactively;
     # create the system user/group explicitly as a fallback.

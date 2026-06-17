@@ -41,6 +41,7 @@ services:
       # on the backend service, replacing "icecast" with the exact service name.
       - ICECAST_HOST=icecast
       - ICECAST_PORT=8000
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD:-changeme123}
     volumes:
       # Shared HLS segment volume so Nginx can serve segments directly
       # from disk without proxying through the Go server (optional optimisation).
