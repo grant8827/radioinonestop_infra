@@ -97,9 +97,12 @@ services:
       # On Railway set ICECAST_URL=http://${{ icecast.RAILWAY_PRIVATE_DOMAIN }}:8000
       # on this service, replacing "icecast" with the exact service name.
       - ICECAST_URL=http://icecast:8000
+      - WEBRTC_URL=http://mediamtx:8889
     depends_on:
       backend:
         condition: service_healthy
+      mediamtx:
+        condition: service_started
 
   nginx:
     image: nginx:1.27-alpine
