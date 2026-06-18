@@ -46,11 +46,11 @@ rtspAddress: :8554
 # Stream paths
 #
 # Radio:  rtmp://<server>:1935/live/radio
-# Video:  rtmp://<server>:1935/live/video
+# VIDEO DISABLED: rtmp://<server>:1935/live/video
 #
 # HLS playback URLs (for Admin Settings):
 #   http://<server>:8888/live/radio/index.m3u8
-#   http://<server>:8888/live/video/index.m3u8
+# VIDEO DISABLED: video HLS playback path removed.
 ###############################################
 paths:
   # Browser broadcaster — WebRTC WHIP → HLS
@@ -80,9 +80,7 @@ paths:
     source: publisher
     maxReaders: 200
 
-  live/video:
-    source: publisher
-    maxReaders: 200
+  # VIDEO DISABLED: legacy live/video path removed.
 
   # Catch-all (optional — accepts any path)
   ~^.*$:
