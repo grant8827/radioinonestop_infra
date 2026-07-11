@@ -22,16 +22,15 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: ams_backend
     restart: unless-stopped
     # MediaMTX is the sole RTMP ingest endpoint (port 1935).
     # Go RTMP server is disabled via DISABLE_GO_RTMP=1 below.
-    ports:
-      # - "1935:1935"
+    # No host port is needed; Nginx reaches the backend on the Compose network.
     env_file:
-      - ./backend/.env
+      - ../backend/.env
     environment:
       - PORT=8080
       - DISABLE_GO_RTMP=1
@@ -71,6 +70,28 @@ services:
       - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD:-changeme123}
       - ICECAST_HOSTNAME=${ICECAST_HOSTNAME:-localhost}
 
+  # Keeps listener connections open while any individual station encoder
+  # briefly reconnects. Icecast moves listeners back to their original mount
+  # automatically because fallback-override is enabled on station mounts.
+  icecast-standby:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ams_icecast_standby
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        exec ffmpeg -hide_banner -loglevel warning -re
+        -f lavfi -i anullsrc=r=44100:cl=stereo
+        -vn -c:a libmp3lame -b:a 192k -content_type audio/mpeg
+        -f mp3 "icecast://source:$${ICECAST_SOURCE_PASSWORD}@icecast:8000/__standby"
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:-changeme123}
+    depends_on:
+      icecast:
+        condition: service_started
+
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: ams_mediamtx
@@ -91,7 +112,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: ams_frontend
     restart: unless-stopped
