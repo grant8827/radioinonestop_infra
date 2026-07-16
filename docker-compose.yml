@@ -40,6 +40,9 @@ services:
       # on the backend service, replacing "icecast" with the exact service name.
       - ICECAST_HOST=icecast
       - ICECAST_PORT=8000
+      # Keep local listeners on the same-origin Nginx proxy. Production uses
+      # https://stream.radioinonestop.com when this variable is unset.
+      - ICECAST_PUBLIC_URL=${ICECAST_PUBLIC_URL:-/icecast}
       # Shared source secret used by backend->Icecast push when configured.
       # Keep this identical to the Icecast source-password in icecast.xml.
       - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:-changeme123}
